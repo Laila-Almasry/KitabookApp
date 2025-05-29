@@ -8,7 +8,6 @@ use App\Models\BookCopy;
 use App\Services\BookService;
 use BookService as GlobalBookService;
 use Illuminate\Http\Request;
-use Milon\Barcode\Facades\DNS1DFacade;
 use Illuminate\Support\Facades\DB;
 
 
