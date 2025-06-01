@@ -65,6 +65,9 @@ public function index()
     }
 
 
+
+    
+
     /**
      * Display the specified resource.
      */
