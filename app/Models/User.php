@@ -31,16 +31,35 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-  
+
 
     public function borrows()
 {
     return $this->hasMany(Borrow::class);
 }
+public function borrow_reservations(){
+  return $this->hasMany(BorrowReservation::class);
+}
 
 public function wallet()
 {
-    return $this->belongsTo(Wallet::class);
+    return $this->hasOne(Wallet::class);
 }
+
+public function ratings(){
+    return $this->hasMany(BookRating::class);
+}
+
+//automatically create a wallet for the user once the user is created
+protected static function booted()
+{
+    static::created(function ($user) {
+        $user->wallet()->create([
+            'freezed_money' => 0,
+            'credits' => 0,
+        ]);
+    });
+}
+
 
 }

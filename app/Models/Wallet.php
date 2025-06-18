@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Wallet extends Model
 {
 protected $fillable=[
+    'user_id',
     'freezed_money',
     'credits'
 ];
 
     public function user()
 {
-    return $this->hasOne(User::class);
+    return $this->belongsTo(User::class);
 }
 
 }

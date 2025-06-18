@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('book_id')->unsigned();
             $table->foreign('book_id')->references('id')->on('books');
-            $table->bigInteger('order_item_id')->unsigned();
+            $table->bigInteger('order_item_id')->unsigned()->nullable();
             $table->foreign('order_item_id')->references('id')->on('order_items');
             $table->string('barcode')->unique(); // unique per copy
             $table->enum('status', ['available', 'borrowed', 'damaged', 'lost', 'reserved','sold'])->default('available');

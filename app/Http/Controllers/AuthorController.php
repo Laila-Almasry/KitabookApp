@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AuthorController extends Controller
 {
@@ -41,6 +42,48 @@ class AuthorController extends Controller
         $author->books=Book::where('author_id','=',$id)->get();
         return response()->json([
             'author' => $author
+        ], 200);
+    }
+
+     // Update an author
+    public function update(Request $request, $id) {
+        $author = Author::findOrFail($id);
+
+        $validated = $request->validate([
+            'fullname' => 'sometimes|string|max:255',
+            'image' => 'nullable|image|max:2048',
+            'about' => 'nullable|string',
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Delete the old image
+            if ($author->image) {
+                Storage::disk('public')->delete($author->image);
+            }
+            $validated['image'] = $request->file('image')->store('authors_images', 'public');
+        }
+
+        $author->update($validated);
+        $author->image_url = $author->image ? asset('storage/' . $author->image) : null;
+
+        return response()->json([
+            'message' => 'Author updated successfully',
+            'author' => $author
+        ], 200);
+    }
+     // Delete an author
+    public function destroy($id) {
+        $author = Author::findOrFail($id);
+
+        // Delete image if exists
+        if ($author->image) {
+            Storage::disk('public')->delete($author->image);
+        }
+
+        $author->delete();
+
+        return response()->json([
+            'message' => 'Author deleted successfully'
         ], 200);
     }
 }

@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wallets', function (Blueprint $table) {
+        Schema::create('borrow_reservations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->decimal('freezed_money', 10, 2)->default(0);
-            $table->decimal('credits', 10, 2)->default(0);
+            $table->foreignId('book_copy_id')->constrained()->onDelete('cascade');
+            $table->timestamp('reserved_at');
+            $table->timestamp('expires_at');
+            $table->enum('status', ['pending', 'confirmed', 'expired', 'cancelled'])->default('pending');
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('wallets');
+        Schema::dropIfExists('borrow_reservations');
     }
 };

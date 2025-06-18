@@ -7,21 +7,28 @@ use App\Models\Book;
 use App\Models\BookCopy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Wallet;
 
 class OrderController extends Controller
 {
-    public function placeOrder(Request $request)
+     public function placeOrder(Request $request)
     {
         $user = $request->user();
-        $items = $request->input('items');
 
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.book_id' => 'required|integer|exists:books,id',
+            'items.*.quantity' => 'required|integer|min:1'
+        ]);
+
+        $items = $request->input('items');
         $rejected = [];
 
         DB::beginTransaction();
 
         try {
             $total = 0;
-            $copiesToReserve = [];
+            $copiesToSell = [];
             $orderItemsData = [];
 
             foreach ($items as $item) {
@@ -29,13 +36,6 @@ class OrderController extends Controller
                 $quantity = $item['quantity'];
 
                 $book = Book::find($bookId);
-                if (!$book) {
-                    $rejected[] = [
-                        'book_id' => $bookId,
-                        'reason' => 'Book not found'
-                    ];
-                    continue;
-                }
 
                 $availableCopies = BookCopy::where('book_id', $bookId)
                     ->where('status', 'available')
@@ -46,12 +46,12 @@ class OrderController extends Controller
                     $rejected[] = [
                         'book_id' => $bookId,
                         'title' => $book->title,
-                        'reason' => "Only {$availableCopies->count()} copy(ies) available, {$quantity} requested."
+                        'reason' => "Only {$availableCopies->count()} available out of {$quantity} requested."
                     ];
                     continue;
                 }
 
-                $copiesToReserve[] = $availableCopies;
+                $copiesToSell[] = $availableCopies;
                 $total += $book->price * $quantity;
 
                 $orderItemsData[] = [
@@ -66,11 +66,22 @@ class OrderController extends Controller
                 return response()->json([
                     'status' => 'rejected',
                     'message' => 'Some items are unavailable',
-                    'reasons' => $rejected,
+                    'reasons' => $rejected
                 ], 422);
             }
 
-            // Create the order
+            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+            if (!$wallet || $wallet->credits < $total) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 'rejected',
+                    'message' => 'Insufficient balance in wallet.'
+                ], 402);
+            }
+
+            $wallet->credits -= $total;
+            $wallet->save();
+
             $order = Order::create([
                 'user_id' => $user->id,
                 'status' => 'confirmed',
@@ -83,7 +94,7 @@ class OrderController extends Controller
                     ...$itemData
                 ]);
 
-                foreach ($copiesToReserve[$index] as $copy) {
+                foreach ($copiesToSell[$index] as $copy) {
                     $copy->update([
                         'status' => 'sold',
                         'order_item_id' => $orderItem->id
@@ -95,16 +106,16 @@ class OrderController extends Controller
 
             return response()->json([
                 'status' => 'confirmed',
-                'message' => 'Order placed successfully',
-                'order_id' => $order->id,
+                'message' => 'Order placed successfully.',
+                'order_id' => $order->id
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => 'An error occurred while placing the order',
-                'error' => $e->getMessage(),
+                'message' => 'An error occurred while placing the order.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
