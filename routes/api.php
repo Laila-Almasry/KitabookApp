@@ -102,3 +102,4 @@ Route::middleware('auth:sanctum')->prefix('myreading')->group(function () {
     Route::put('/{id}', [MyReadingController::class, 'update']);
     Route::delete('/{id}', [MyReadingController::class, 'destroy']);
 });
+
