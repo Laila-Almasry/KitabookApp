@@ -28,19 +28,22 @@ class CategoryController extends Controller
             'image' => 'nullable|image|max:2048',
             'description' => 'nullable|string',
         ]);
-
+    
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('category_images', 'public');
+            $file = $request->file('image');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('category_images'), $fileName);
+            $validated['image_url'] = asset('category_images/' . $fileName);
         }
-
+    
         $category = Category::create($validated);
-        $category->image_url = $category->image ? asset('storage/' . $category->image) : null;
-
+    
         return response()->json([
             'message' => 'Category created successfully',
             'category' => $category
         ], 201);
     }
+    
 
     // Show a specific category
     public function show($id)

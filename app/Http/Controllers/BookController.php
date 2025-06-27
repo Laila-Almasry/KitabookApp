@@ -77,10 +77,10 @@ public function index()
     $bookCopies = BookCopy::where('book_id', $id)->get();
 
     // Generate URLs
-    $book->cover_image_url = $book->cover_image ? env('APP_URL').':8000/storage/' . $book->cover_image : null;
-    $book->file_path_url = $book->file_path ? env('APP_URL').':8000/storage/' . $book->file_path : null;
-    $book->sound_path_url = $book->sound_path ? env('APP_URL').':8000/storage/' . $book->sound_path : null;
-
+    $book->cover_image_url = $book->cover_image ? asset('storage/' . $book->cover_image) : null;
+    $book->file_path_url = $book->file_path ? asset('storage/' . $book->file_path) : null;
+    $book->sound_path_url = $book->sound_path ? asset('storage/' . $book->sound_path) : null;
+    
     // Build clean ratings list with user info
     $ratings = $book->ratings->map(function ($rating) {
         return [
@@ -117,7 +117,7 @@ public function update(Request $request, $id)
         'category_id' => 'nullable|exists:categories,id',
         'cover_image' => 'nullable|image|max:2048',
         'file_path' => 'nullable|mimes:pdf|max:10240',
-                    'sound_path'    => 'nullable|file|mimes:mpeg,mp3|max:51200', // optional audio file (max 50MB)
+        'sound_path'    => 'nullable|file|mimes:mpeg,mp3|max:51200', // optional audio file (max 50MB)
 
     ]);
 

@@ -61,7 +61,13 @@ Route::controller(UserController::class)->group(function(){
     Route::post('/checkRegistration', [UserController::class, 'checkRegistration']);
     Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
 });
-
+Route::prefix('products')->group(function () {
+    Route::get('/', [CategoryController::class, 'index']);        // GET /api/product
+    Route::post('/', [CategoryController::class, 'store']);       // POST /api/product
+    Route::get('/{id}', [CategoryController::class, 'show']);     // GET /api/product/{id}
+    Route::put('/{id}', [CategoryController::class, 'update']);   // PUT /api/product/{id}
+    Route::delete('/{id}', [CategoryController::class, 'destroy']);// DELETE /api/product/{id}
+});
 
 // orders routes
 Route::middleware('auth:sanctum')->post('/orders', [OrderController::class, 'placeOrder']);
