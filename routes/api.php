@@ -13,7 +13,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\MyReadingController;
 use App\Http\Controllers\VisitReservationController;
-
+use App\Http\Controllers\DigitalProductController; 
+use App\Http\Controllers\Profile; 
 Route::post('owner/login',[OwnerController::class,'login']);
 
 Route::prefix('owner')->middleware(['auth:sanctum','ensure.owner'])->group(function (){
@@ -62,11 +63,18 @@ Route::controller(UserController::class)->group(function(){
     Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
 });
 Route::prefix('products')->group(function () {
-    Route::get('/', [CategoryController::class, 'index']);        // GET /api/product
-    Route::post('/', [CategoryController::class, 'store']);       // POST /api/product
-    Route::get('/{id}', [CategoryController::class, 'show']);     // GET /api/product/{id}
-    Route::put('/{id}', [CategoryController::class, 'update']);   // PUT /api/product/{id}
-    Route::delete('/{id}', [CategoryController::class, 'destroy']);// DELETE /api/product/{id}
+    Route::get('/', [DigitalProductController::class, 'index']);        // GET /api/product
+    Route::post('/', [DigitalProductController::class, 'store']);       // POST /api/product
+    Route::get('/{id}', [DigitalProductController::class, 'show']);     // GET /api/product/{id}
+    Route::put('/{id}', [DigitalProductController::class, 'update']);   // PUT /api/product/{id}
+    Route::delete('/{id}', [DigitalProductController::class, 'destroy']);// DELETE /api/product/{id}
+});
+Route::prefix('profile')->group(function () {
+    Route::get('/', [Profile::class, 'index']);        // GET /api/Profile
+    Route::post('/', [Profile::class, 'store']);       // POST /api/Profile
+    Route::get('/{id}', [Profile::class, 'show']);     // GET /api/Profile /{id}
+    Route::put('/{id}', [Profile::class, 'update']);   // PUT /api/Profile/{id}
+    Route::delete('/{id}', [Profile::class, 'destroy']);// DELETE /api/Profile/{id}
 });
 
 // orders routes
