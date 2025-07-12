@@ -13,6 +13,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\MyReadingController;
 use App\Http\Controllers\VisitReservationController;
+use App\Http\Controllers\ContactController;
 
 Route::post('owner/login',[OwnerController::class,'login']);
 
@@ -102,4 +103,4 @@ Route::middleware('auth:sanctum')->prefix('myreading')->group(function () {
     Route::put('/{id}', [MyReadingController::class, 'update']);
     Route::delete('/{id}', [MyReadingController::class, 'destroy']);
 });
-
+Route::post('/contact', [ContactController::class, 'send']);
