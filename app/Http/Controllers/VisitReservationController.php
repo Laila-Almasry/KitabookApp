@@ -15,6 +15,10 @@ class VisitReservationController extends Controller
     return $user instanceof \App\Models\User ? $user->id : null;
 }
 
+public function show($id){
+    $visit=VisitReservation::findOrFail($id);
+    return response()->json(['visit'=>$visit],200);
+}
     // GET available times
     public function checkAvailableTimes(Request $request)
     {
@@ -54,7 +58,7 @@ class VisitReservationController extends Controller
     public function store(VisitReservationRequest $request)
     {
         $start = Carbon::createFromFormat('H:i', $request->start_time);
-        $end = (clone $start)->addHours($request->duration);
+        $end = (clone $start)->addHours((int)$request->duration);
 
         $conflicts = VisitReservation::where('visit_date', $request->visit_date)
             ->where(function ($query) use ($start, $end) {
@@ -71,7 +75,8 @@ class VisitReservationController extends Controller
             'visit_date' => $request->visit_date,
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
-            'guest_name'=>$request->guest_name
+            'guest_name'=>$request->guest_name,
+            'status'=>$request->status,
         ]);
 
         return response()->json(['message' => 'Reservation successful.', 'reservation' => $reservation]);
@@ -107,13 +112,30 @@ class VisitReservationController extends Controller
         return response()->json(['message' => 'Reservation cancelled.']);
     }
 
-    public function index(){
-        $visits=VisitReservation::all();
+    public function index()
+{
+    // Eager load the user relationship
+    $visits = VisitReservation::with('user')->get();
+
+    // Map each visit with user_name included
+    $data = $visits->map(function ($visit) {
+        return [
+            'id' => $visit->id,
+            'guest_name' => $visit->guest_name,
+            'visit_date' => $visit->visit_date,
+            'start_time' => $visit->start_time,
+            'end_time' => $visit->end_time,
+            'status' => $visit->status,
+            'code' => $visit->guest_name?$visit->code:'',
+            'username' => $visit->user->username ?? 'Guest',
+        ];
+    });
 
     return response()->json([
-        'all visits reservations'=>$visits,
-    ],200);
-    }
+        'visits' => $data,
+    ], 200);
+}
+
 
     public function updateStatus(Request $request, $id)
 {
@@ -136,5 +158,37 @@ class VisitReservationController extends Controller
         'visit' => $visit
     ]);
 }
+
+public function check(Request $request)
+{
+    $request->validate([
+        'visit_date' => 'required|date|after_or_equal:today',
+        'start_time' => 'required|date_format:H:i',
+        'end_time' => 'required|date_format:H:i|after:start_time',
+    ]);
+
+    $visitDate = $request->visit_date;
+    $startTime = $request->start_time;
+    $endTime = $request->end_time;
+
+    // Count overlapping visits
+    $overlappingVisits = VisitReservation::where('visit_date', $visitDate)
+        ->where(function ($query) use ($startTime, $endTime) {
+            $query->where(function ($q) use ($startTime, $endTime) {
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
+            });
+        })
+        ->count();
+
+    $maxVisitors = 20;
+
+    return response()->json([
+        'available' => $overlappingVisits < $maxVisitors,
+        'current' => $overlappingVisits,
+        'remaining' => $maxVisitors - $overlappingVisits
+    ]);
+}
+
 
 }

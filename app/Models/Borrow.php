@@ -13,6 +13,8 @@ class Borrow extends Model
         'due_date',
         'returned_at',
         'status',
+        'borrower_name',
+        'borrower_phone_number'
     ];
 
     public function user()

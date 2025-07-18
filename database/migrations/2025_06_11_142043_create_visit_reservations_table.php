@@ -19,7 +19,7 @@ return new class extends Migration
     $table->time('start_time');
     $table->time('end_time');
     $table->enum('status', ['pending', 'checked_in', 'cancelled','done'])->default('pending');
-    $table->uuid('code')->unique(); // كود فريد للباركود
+    $table->uuid('code')->unique()->nullable(); // كود فريد للباركود
     $table->timestamps();
         });
     }

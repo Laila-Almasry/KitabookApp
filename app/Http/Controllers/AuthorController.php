@@ -11,6 +11,9 @@ class AuthorController extends Controller
 {
     public function index(){
         $authors=Author::all();
+        for($i=0;$i<count($authors);$i++){
+                    $authors[$i]->image_url = $authors[$i]->image ? env('APP_URL').':8000/storage/' . $authors[$i]->image : null;
+        }
         return response()->json(['authors'=>$authors],200);
     }
 
@@ -38,8 +41,13 @@ class AuthorController extends Controller
         // Find the author by ID or fail with a 404 error
         $author = Author::findOrFail($id);
         // Generate the URL for the author's image if it exists
-        $author->image_url = $author->image ? 'http://127.0.0.1:8000/storage/' . $author->image : null;
+        $author->image_url = $author->image ? env('APP_URL').':8000/storage/' . $author->image : null;
         $author->books=Book::where('author_id','=',$id)->get();
+        for($i=0;$i<count($author->books);$i++){
+                $author->books[$i]->cover_image_url = $author->books[$i]->cover_image ? env('APP_URL').':8000/storage/' . $author->books[$i]->cover_image : null;
+        $author->books[$i]->file_path_url = $author->books[$i]->file_path ? env('APP_URL').':8000/storage/' . $author->books[$i]->file_path : null;
+        $author->books[$i]->sound_path_url = $author->books[$i]->sound_path ? env('APP_URL').':8000/storage/' . $author->books[$i]->sound_path : null;
+        }
         return response()->json([
             'author' => $author
         ], 200);

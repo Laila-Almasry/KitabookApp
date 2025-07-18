@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Owner;
+use Illuminate\Support\Facades\Hash;
 
 class OwnerController extends Controller
 {
@@ -32,6 +34,24 @@ class OwnerController extends Controller
             'message' => 'Invalid credentials',
         ], 401);
     }
+
+public function checkPassword(Request $request) {
+    $request->validate([
+        'password' => 'required',
+         'ownerId' => 'required|exists:owners,id'
+    ]);
+
+
+
+ $owner = Owner::find($request->ownerId);
+    if ( Hash::check($request->password, $owner->password)) {
+        return response()->json(['result' => true], 200);
+    } else {
+        return response()->json(['result' => false], 200);
+    }
+}
+
+
 }
 
 

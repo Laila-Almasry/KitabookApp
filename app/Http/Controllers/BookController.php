@@ -7,6 +7,9 @@ use App\Models\Book;
 use App\Models\BookCopy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\UpdateBookRequest;
+use App\Http\Resources\BookResource;
+use Illuminate\Support\Facades\Storage;
 
 
 class BookController extends Controller
@@ -15,39 +18,12 @@ class BookController extends Controller
      * Display a listing of the resource.
      */
 
-public function index()
-{
-    $books = Book::with([
-        'author',
-        'category',
-        'ratings.user' // Include user info for ratings
-    ])->get();
+    public function index()
+    {
+        $books = Book::with(['author', 'category', 'ratings.user'])->get();
+        return response()->json(['books' => BookResource::collection($books)], 200);
+    }
 
-    // Format each book with additional data
-    $books = $books->map(function ($book) {
-        // Generate URLs
-        $book->cover_image_url = $book->cover_image ? env('APP_URL').':8000/storage/' . $book->cover_image : null;
-        $book->file_path_url = $book->file_path ? env('APP_URL').':8000/storage/' . $book->file_path : null;
-        $book->sound_path_url = $book->sound_path ? env('APP_URL').':8000/storage/' . $book->sound_path : null;
-
-        // Build clean ratings list with user info
-        $book->ratings = $book->ratings->map(function ($rating) {
-            return [
-                'user_id' => $rating->user_id,
-                'user_name' => $rating->user->name ?? 'Unknown',
-                'rating' => $rating->rating,
-                'comment' => $rating->comment,
-                'created_at' => $rating->created_at->toDateTimeString(),
-            ];
-        });
-
-        return $book;
-    });
-
-    return response()->json([
-        'books' => $books
-    ], 200);
-}
 
 
     /**
@@ -67,162 +43,128 @@ public function index()
      * Display the specified resource.
      */
     public function show($id)
-{
-    $book = Book::with([
-        'author',
-        'category',
-        'ratings.user' // Include user info for ratings
-    ])->findOrFail($id);
+    {
+        $book = Book::with(['author', 'category', 'ratings.user'])->findOrFail($id);
+        $copies = BookCopy::where('book_id', $book->id)->get();
 
-    $bookCopies = BookCopy::where('book_id', $id)->get();
-
-    // Generate URLs
-    $book->cover_image_url = $book->cover_image ? env('APP_URL').':8000/storage/' . $book->cover_image : null;
-    $book->file_path_url = $book->file_path ? env('APP_URL').':8000/storage/' . $book->file_path : null;
-    $book->sound_path_url = $book->sound_path ? env('APP_URL').':8000/storage/' . $book->sound_path : null;
-
-    // Build clean ratings list with user info
-    $ratings = $book->ratings->map(function ($rating) {
-        return [
-            'user_id' => $rating->user_id,
-            'user_name' => $rating->user->name ?? 'Unknown',
-            'rating' => $rating->rating,
-            'comment' => $rating->comment,
-            'created_at' => $rating->created_at->toDateTimeString(),
-        ];
-    });
-
-    return response()->json([
-        'book' => $book,
-        'copies' => $bookCopies,
-        'ratings' => $ratings,
-        'avg_rating' => $book->rating,
-        'raters_count' => $book->raterscount,
-    ]);
-}
-
-
- // Update book info
-public function update(Request $request, $id)
-{
-    $book = Book::findOrFail($id);
-
-    $validated = $request->validate([
-        'title' => 'nullable|string|max:255',
-        'preview' => 'nullable|string',
-        'price' => 'nullable|numeric',
-        'publisher' => 'nullable|string|max:255',
-        'language' => 'nullable|string|in:english,arabic,french',
-        'author_id' => 'nullable|exists:authors,id',
-        'category_id' => 'nullable|exists:categories,id',
-        'cover_image' => 'nullable|image|max:2048',
-        'file_path' => 'nullable|mimes:pdf|max:10240',
-                    'sound_path'    => 'nullable|file|mimes:mpeg,mp3|max:51200', // optional audio file (max 50MB)
-
-    ]);
-
-    $book->fill($validated);
-
-    if ($request->hasFile('cover_image')) {
-        $book->cover_image = $request->file('cover_image')->store('covers', 'public');
+        return response()->json([
+            'book' => new BookResource($book),
+            'copies' => $copies,
+        ]);
     }
 
-    if ($request->hasFile('file_path')) {
-        $book->file_path = $request->file('file_path')->store('books', 'public');
+
+
+    // Update book info
+
+    public function update(UpdateBookRequest $request, $id)
+    {
+        $book = Book::findOrFail($id);
+
+        $book->fill($request->validated());
+
+        if ($request->hasFile('cover_image')) {
+            $book->cover_image = $request->file('cover_image')->store('covers', 'public');
+        }
+
+        if ($request->hasFile('file_path')) {
+            $book->file_path = $request->file('file_path')->store('books', 'public');
+        }
+
+        if ($request->hasFile('sound_path')) {
+            $book->sound_path = $request->file('sound_path')->store('audio', 'public');
+        }
+
+        $book->save();
+
+        return response()->json([
+            'message' => 'Book updated successfully',
+            'book' => new BookResource($book),
+        ]);
     }
-    if ($request->hasFile('audio_path')) {
-        $book->audio_path = $request->file('audio_path')->store('audio', 'public');
+
+
+    private function deleteBookFiles(Book $book)
+    {
+        foreach (['cover_image', 'file_path', 'sound_path'] as $fileField) {
+            if ($book->$fileField && Storage::disk('public')->exists($book->$fileField)) {
+                Storage::disk('public')->delete($book->$fileField);
+            }
+        }
     }
-
-    $book->save();
-
-    return response()->json(['message' => 'Book updated successfully', 'book' => $book]);
-}
-
 
     // Delete a book
     public function destroy($id)
     {
         $book = Book::findOrFail($id);
-
-            $book->book_copies()->delete();
-
-        // $book->copies()->delete();
-$book->delete();
-
+        $this->deleteBookFiles($book);
+        $book->delete();
 
         return response()->json(['message' => 'Book deleted successfully']);
     }
 
 
-public function latestReleases()
-{
-    $books = Book::latest('created_at')->take(10)->get();
-    return response()->json(['books'=>$books],200);
-}
-
-
-
-public function bestSellers()
-{
-    $books = Book::select('books.*', DB::raw('SUM(order_items.quantity) as total_sold'))
-        ->join('order_items', 'books.id', '=', 'order_items.book_id')
-        ->join('orders', 'orders.id', '=', 'order_items.order_id')
-        ->where('orders.status', '!=', 'cancelled') // optional: ignore cancelled orders
-        ->groupBy('books.id')
-        ->orderByDesc('total_sold')
-        ->take(10)
-        ->get();
-
-    return response()->json(['books'=>$books],200);
-}
-
-public function search(Request $request)
-{
-    $query = Book::query()->with(['author', 'category']);
-
-    if ($request->has('keyword')) {
-        $keyword = $request->keyword;
-
-        $query->where(function ($q) use ($keyword) {
-            $q->where('title', 'LIKE', '%' . $keyword . '%')
-              ->orWhere('preview', 'LIKE', '%' . $keyword . '%')
-              ->orWhere('publisher', 'LIKE', '%' . $keyword . '%');
-        });
+    public function latestReleases()
+    {
+        $books = Book::latest()->take(10)->get();
+        return response()->json(['books' => BookResource::collection($books)], 200);
     }
 
-    if ($request->has('category_id')) {
-        $query->where('category_id', $request->category_id);
+
+
+    public function bestSellers()
+    {
+        $books = Book::select('books.*', DB::raw('SUM(order_items.quantity) as total_sold'))
+            ->join('order_items', 'books.id', '=', 'order_items.book_id')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->groupBy('books.id')
+            ->orderByDesc('total_sold')
+            ->take(10)
+            ->get();
+
+        return response()->json(['books' => BookResource::collection($books)], 200);
     }
 
-    if ($request->has('author_id')) {
-        $query->where('author_id', $request->author_id);
-    }
 
-    // language filter
-    if ($request->has('language')) {
-        $query->where('language', $request->language);
-    }
-       // Filter by price range
-    if ($request->filled('min_price')) {
-        $query->where('price', '>=', $request->min_price);
-    }
-    if ($request->filled('max_price')) {
-        $query->where('price', '<=', $request->max_price);
-    }
+    public function search(Request $request)
+    {
+        $query = Book::with(['author', 'category']);
 
-    $books = $query->get();
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'LIKE', "%$keyword%")
+                    ->orWhere('preview', 'LIKE', "%$keyword%")
+                    ->orWhere('publisher', 'LIKE', "%$keyword%");
+            });
+        }
 
-    $books->map(function ($book) {
-        $book->cover_image_url = $book->cover_image ? asset('storage/' . $book->cover_image) : null;
-        $book->file_path_url = $book->file_path ? asset('storage/' . $book->file_path) : null;
-        $book->sound_path_url = $book->sound_path ? asset('storage/' . $book->sound_path) : null;
-        return $book;
-    });
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
 
-    return response()->json([
-        'books' => $books,
-        'total' => $books->count(),
-    ]);
-}
+        if ($request->filled('author_id')) {
+            $query->where('author_id', $request->author_id);
+        }
+
+        if ($request->filled('language')) {
+            $query->where('language', $request->language);
+        }
+
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        $books = $query->get();
+
+        return response()->json([
+            'books' => BookResource::collection($books),
+            'total' => $books->count(),
+        ]);
+    }
 }

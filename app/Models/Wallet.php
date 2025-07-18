@@ -17,4 +17,9 @@ protected $fillable=[
     return $this->belongsTo(User::class);
 }
 
+public function transactions()
+{
+    return $this->hasMany(WalletTransaction::class);
+}
+
 }

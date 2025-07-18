@@ -18,13 +18,13 @@ return new class extends Migration
             $table->text('preview')->nullable();
             $table->string('cover_image')->nullable();
             $table->bigInteger('author_id')->unsigned()->nullable();
-            $table->foreign('author_id')->references('id')->on('authors');
+            $table->foreign('author_id')->references('id')->on('authors') ->onDelete('cascade'); ;
             $table->decimal('price', 10, 2);
             $table->boolean('is_physical')->default(false)->nullable();
             $table->string('sound_path')->nullable();
             $table->string('file_path')->nullable();
             $table->bigInteger('category_id')->unsigned()->nullable();
-            $table->foreign('category_id')->references('id')->on('categories');
+            $table->foreign('category_id')->references('id')->on('categories') ->onDelete('cascade'); ;
             $table->integer('copies')->default(0)->nullable();
             $table->string('publisher')->nullable();
             $table->string('language')->nullable();

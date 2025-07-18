@@ -19,8 +19,8 @@ return new class extends Migration
             $table->text('comment')->nullable();
             $table->timestamps();
             $table->unique(['user_id', 'book_id']); // One rating per user per book
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('book_id')->references('id')->on('books');
+            $table->foreign('user_id')->references('id')->on('users') ->onDelete('cascade'); ;
+            $table->foreign('book_id')->references('id')->on('books') ->onDelete('cascade'); ;
         });
 
     }

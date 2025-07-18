@@ -14,9 +14,9 @@ return new class extends Migration
           Schema::create('book_copies', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('book_id')->unsigned();
-            $table->foreign('book_id')->references('id')->on('books');
+            $table->foreign('book_id')->references('id')->on('books') ->onDelete('cascade'); ;
             $table->bigInteger('order_item_id')->unsigned()->nullable();
-            $table->foreign('order_item_id')->references('id')->on('order_items');
+            $table->foreign('order_item_id')->references('id')->on('order_items') ->onDelete('cascade'); ;
             $table->string('barcode')->unique(); // unique per copy
             $table->enum('status', ['available', 'borrowed', 'damaged', 'lost', 'reserved','sold'])->default('available');
             $table->timestamps();

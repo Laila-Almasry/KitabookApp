@@ -26,6 +26,8 @@ class VisitReservationRequest extends FormRequest
             'duration' => 'required|integer|in:1,2,3',
             'start_time' => 'required|date_format:H:i',
             'guest_name' => 'nullable|string|max:255',
+            'status' => 'nullable|in:pending,checked_in,done,cancelled',
+
         ];
     }
 }

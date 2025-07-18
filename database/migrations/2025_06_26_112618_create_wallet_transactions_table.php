@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('orders', function (Blueprint $table) {
+           Schema::create('wallet_transactions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users') ->onDelete('cascade'); ;
-            $table->enum('status', ['pending', 'confirmed', 'rejected', 'completed'])->default('pending');
-            $table->decimal('total_price', 10, 2);
+            $table->foreignId('wallet_id')->constrained()->onDelete('cascade');
+            $table->string('type'); // charge, freeze, unfreeze, buy,borrow
+            $table->decimal('amount', 10, 2);
+            $table->string('book_copy_barcode')->nullable(); // for buy
             $table->timestamps();
         });
-
     }
 
     /**
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('wallet_transactions');
     }
 };

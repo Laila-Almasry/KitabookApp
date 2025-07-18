@@ -13,9 +13,9 @@ return new class extends Migration
     {
          Schema::create('order_items', function (Blueprint $table) {
             $table->id();
-            $table->foreign('order_id')->references('id')->on('orders');
+            $table->foreign('order_id')->references('id')->on('orders') ->onDelete('cascade'); ;
             $table->unsignedBigInteger('order_id');
-            $table->foreign('book_id')->references('id')->on('books');
+            $table->foreign('book_id')->references('id')->on('books') ->onDelete('cascade'); ;
             $table->unsignedBigInteger('book_id');
               $table->unsignedInteger('quantity');
             $table->decimal('unit_price', 8, 2);
