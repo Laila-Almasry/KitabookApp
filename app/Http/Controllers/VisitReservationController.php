@@ -75,8 +75,12 @@ public function show($id){
             'visit_date' => $request->visit_date,
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
+<<<<<<< HEAD
             'guest_name'=>$request->guest_name,
             'status'=>$request->status,
+=======
+            'guest_name'=>$request->guest_name
+>>>>>>> f75641e386c65cda5933b4fe31dc0b6b6ff46e3d
         ]);
 
         return response()->json(['message' => 'Reservation successful.', 'reservation' => $reservation]);
@@ -112,6 +116,7 @@ public function show($id){
         return response()->json(['message' => 'Reservation cancelled.']);
     }
 
+<<<<<<< HEAD
     public function index()
 {
     // Eager load the user relationship
@@ -136,6 +141,15 @@ public function show($id){
     ], 200);
 }
 
+=======
+    public function index(){
+        $visits=VisitReservation::all();
+
+    return response()->json([
+        'all visits reservations'=>$visits,
+    ],200);
+    }
+>>>>>>> f75641e386c65cda5933b4fe31dc0b6b6ff46e3d
 
     public function updateStatus(Request $request, $id)
 {
@@ -159,6 +173,7 @@ public function show($id){
     ]);
 }
 
+<<<<<<< HEAD
 public function check(Request $request)
 {
     $request->validate([
@@ -191,4 +206,6 @@ public function check(Request $request)
 }
 
 
+=======
+>>>>>>> f75641e386c65cda5933b4fe31dc0b6b6ff46e3d
 }
